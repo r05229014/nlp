@@ -1,7 +1,9 @@
+import json
 from django.shortcuts import render, redirect
 from django.http import HttpResponse
 from django.http.response import JsonResponse
 from .forms import TextForm
+from ckiptagger import data_utils, construct_dictionary, WS, POS, NER
 
 def helloworld(request):
     """A test view which tells if the website is working."""
@@ -21,5 +23,21 @@ def index(request):
 
 def handler(input_text):
     """The Hook of text-handler."""
-    result_text = f'hello world, the text is {input_text}'
-    return result_text
+    # load model
+    ws = WS("/home/erica/hololink/data")
+    pos = POS("/home/erica/hololink/data")
+    ner = NER("/home/erica/hololink/data")
+
+    sentence_list = [input_text]
+    word_sentence_list = ws(sentence_list)
+
+    pos_sentence_list = pos(word_sentence_list)
+    entity_sentence_list = ner(word_sentence_list, pos_sentence_list)
+    
+    output = {'Input_text': sentence_list[0]}
+    for i, entity in enumerate(entity_sentence_list[0]):
+        output[f'Entity_{i}'] = entity
+    output_json = json.dumps(output, sort_keys=True, indent=4, ensure_ascii=False)
+
+    # result_text = f'hello world, the text is {input_text}\nentity is {sorted(entity_texts)}'
+    return output_json
